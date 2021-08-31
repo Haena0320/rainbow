@@ -1,5 +1,5 @@
 import os, sys
-sys.path.append("/home/user15/workspace/rainbow")
+sys.path.append("/data/user15/workspace/rainbow")
 import argparse
 import glob
 import logging
@@ -20,10 +20,10 @@ from nn_utils.help import *
 class AnliDataset(Dataset):
     LABELS = ["1",'2']
     DATA_TYPE_TO_FILENAME = {
-        "train":"alphani-train-dev/train.jsonl",
-        "train_label":"alphani-train-dev/train-labels.lst",
-        "dev":"alphani-train-dev/dev.jsonl",
-        "dev_label":"alphani-train-dev/dev-labels.lst",
+        "train":"alphanli-train-dev/train.jsonl",
+        "train_label":"alphanli-train-dev/train-labels.lst",
+        "dev":"alphanli-train-dev/dev.jsonl",
+        "dev_label":"alphanli-train-dev/dev-labels.lst",
         "test":"alphanli-test/anli.jsonl"}
 
     @staticmethod
@@ -42,6 +42,7 @@ class AnliDataset(Dataset):
         if self.data_type != 'test':
             label_path = os.path.join(self.data_dir, self.DATA_TYPE_TO_FILENAME[self.data_type+"_label"])
             raw_labels = load_text(label_path)
+            assert len(raw_examples) == len(raw_labels)
         self.example_list = []
         for i, line in enumerate(raw_examples):
             qid = line["story_id"]
@@ -99,7 +100,7 @@ class AnliDataset(Dataset):
                 choice_tokens.append(hyp_token)
                 choice_segment_ids.append(1)
             choice_tokens.append(self.sep_token)
-            choice_segment_dis.append(1)
+            choice_segment_ids.append(1)
 
             choice_token_ids = self.tokenizer.convert_tokens_to_ids(choice_tokens)
 

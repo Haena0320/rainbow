@@ -1,5 +1,5 @@
 import os, sys
-sys.path.append("/home/user15/workspace/rainbow")
+sys.path.append("/data/user15/workspace/rainbow")
 import argparse
 import glob
 import logging
@@ -28,8 +28,8 @@ def _part_a(item):
 
 def _part_b(item):
     if ("ctx_b" not in item) or len(item["ctx_b"]) == 0:
-        return item["endings"]
-    return np.array(["{} {}".format(item["ctx_b"],x) for x in item["endings"]])
+        return item["ending_options"]
+    return np.array(["{} {}".format(item["ctx_b"],x) for x in item["ending_options"]])
 
 
 class HellaswagDataset(Dataset):
@@ -62,13 +62,13 @@ class HellaswagDataset(Dataset):
         self.example_list = []
         for i, line in enumerate(raw_examples):
             qid = line["ind"]
-            context = _part_a(line)
+            sentences = _part_a(line)
             endings = _part_b(line)
             label = raw_labels[i] if self.data_type != "test" else "0"
 
             example = {
                 "qid": qid,
-                "context": context,
+                "sentences": sentences,
                 "endings": endings,
                 "label": self.LABELS.index(label)
             }
@@ -86,7 +86,7 @@ class HellaswagDataset(Dataset):
         example = self.example_list[item]
 
         max_seq_length = self.max_seq_length
-        sentence_tokens = self.tokenizer.tokenize(example["sentence"])
+        sentence_tokens = self.tokenizer.tokenize(example["sentences"])
         ending_tokens = [self.tokenizer.tokenize(e_) for e_ in example["endings"]]
 
         tokens = []
@@ -110,7 +110,7 @@ class HellaswagDataset(Dataset):
                 choice_tokens.append(e_token)
                 choice_segment_ids.append(1)
             choice_tokens.append(self.sep_token)
-            choice_segment_dis.append(1)
+            choice_segment_ids.append(1)
 
             choice_token_ids = self.tokenizer.convert_tokens_to_ids(choice_tokens)
 

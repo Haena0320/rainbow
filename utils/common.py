@@ -22,6 +22,8 @@ def load_text(file):
     data_list = []
     with open(file, "r") as fp:
         for line in fp:
-            data_list.append(fp.readline().strip())
+            data_list.append(line.strip("\n"))
     return data_list
+
+
 

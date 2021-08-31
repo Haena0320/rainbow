@@ -1,5 +1,5 @@
 import os, sys
-sys.path.append("/home/user15/workspace/rainbow")
+sys.path.append("/data/user15/workspace/rainbow")
 import argparse
 import glob
 import logging
@@ -26,8 +26,8 @@ class SocialiqaDataset(Dataset):
     DATA_TYPE_TO_FILENAME = {
         "train":"socialiqa-train-dev/train.jsonl",
         "train_label":"socialiqa-train-dev/train-labels.lst",
-        "dev":"socialiqa-train-dev/valid.jsonl",
-        "dev_label":"socialiqa-train-dev/valid-labels.lst",
+        "dev":"socialiqa-train-dev/dev.jsonl",
+        "dev_label":"socialiqa-train-dev/dev-labels.lst",
         "test":"socialiqa-test/socialiqa.jsonl"}
 
     @staticmethod
@@ -44,13 +44,16 @@ class SocialiqaDataset(Dataset):
         self.data_path = os.path.join(self.data_dir, self.DATA_TYPE_TO_FILENAME[self.data_type])
         raw_examples = load_jsonl(self.data_path)
         self.example_list = []
+        if self.data_type != 'test':
+            label_path = os.path.join(self.data_dir, self.DATA_TYPE_TO_FILENAME[self.data_type+'_label'])
+            raw_labels = load_text(label_path)
         for i, line in enumerate(raw_examples):
             qid = "{} {}".format(self.data_type, i)
             context = line["context"]
             question = line["question"]
             answers = np.array([line["answer{}".format(self.LABELS_a[e])] for e in range(len(self.LABELS))])
 
-            label = line["label"] if self.data_type != "test" else "0"
+            label = raw_labels[i] if self.data_type != "test" else "0"
 
             example = {
                 "qid": qid,
@@ -97,7 +100,7 @@ class SocialiqaDataset(Dataset):
                 choice_tokens.append(answer_token)
                 choice_segment_ids.append(1)
             choice_tokens.append(self.sep_token)
-            choice_segment_dis.append(1)
+            choice_segment_ids.append(1)
 
             choice_token_ids = self.tokenizer.convert_tokens_to_ids(choice_tokens)
 

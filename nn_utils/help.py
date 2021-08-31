@@ -154,9 +154,9 @@ def setup_eval_step(args, eval_dataset, **kwargs):
 def setup_opt(args, model):
     no_decay = ["bias", "LayerNorm.weight"]
     optimizer_grouped_parameters = [
-        {"params":[p for n, p in model.named_parameters() if not any(nd in n for nd in no_decay)],
-         "weight_decay":args.weight_decay},
-        {"params":[p for n,p in model.named_parameters() if not any(nd in n for nd in no_decay)], "weight_decay":0.0}
+        {'params': [p for n, p in model.named_parameters() if not any(nd in n for nd in no_decay)],
+         'weight_decay': args.weight_decay},
+        {'params': [p for n, p in model.named_parameters() if any(nd in n for nd in no_decay)], 'weight_decay': 0.0}
     ]
     if args.adam_betas is not None:
         adam_betas = tuple(float(_f) for _f in args.adam_betas.split(","))
@@ -165,7 +165,7 @@ def setup_opt(args, model):
         adam_betas = (0.9, 0.999)
 
     optimizer = AdamW(optimizer_grouped_parameters, lr=args.learning_rate,betas=adam_betas,eps=args.adam_epsilon)
-    scheduler = get_linear_schedule_with_warmup(optimizer, warmup_steps=args.warmup_steps, t_total=args.t_total)
+    scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=args.warmup_steps, num_training_steps=args.t_total)
     return model, optimizer, scheduler
 
 def update_wrt_loss(args, model, optimizer, loss, scalar):
@@ -177,7 +177,7 @@ def update_wrt_loss(args, model, optimizer, loss, scalar):
 
 def model_update_wrt_gradient(args, model, optimizer, scheduler, scalar):
     scalar.unscale_(optimizer)
-    torch.nn.utils.clip_grad_norm(model.parameters(), args.max_grad_norm)
+    torch.nn.utils.clip_grad_norm_(model.parameters(), args.max_grad_norm)
     scalar.step(optimizer)
     scalar.update()
     scheduler.step()

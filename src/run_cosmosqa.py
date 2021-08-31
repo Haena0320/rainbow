@@ -1,5 +1,5 @@
 import os, sys
-sys.path.append("/home/user15/workspace/rainbow")
+sys.path.append("/data/user15/workspace/rainbow")
 import argparse
 import glob
 import logging
@@ -94,7 +94,7 @@ class CosmosqaDataset(Dataset):
                 choice_tokens.append(answer_token)
                 choice_segment_ids.append(1)
             choice_tokens.append(self.sep_token)
-            choice_segment_dis.append(1)
+            choice_segment_ids.append(1)
 
             choice_token_ids = self.tokenizer.convert_tokens_to_ids(choice_tokens)
 

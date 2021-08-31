@@ -1,5 +1,5 @@
 import os, sys
-sys.path.append("/home/user15/workspace/rainbow")
+sys.path.append("/data/user15/workspace/rainbow")
 import argparse
 import glob
 import logging
@@ -25,8 +25,8 @@ class PhysicaliqaDataset(Dataset):
     DATA_TYPE_TO_FILENAME = {
         "train":"physicaliqa-train-dev/train.jsonl",
         "train_label":"physicaliqa-train-dev/train-labels.lst",
-        "dev":"physicaliqa-train-dev/valid.jsonl",
-        "dev_label":"physicaliqa-train-dev/valid-labels.lst",
+        "dev":"physicaliqa-train-dev/dev.jsonl",
+        "dev_label":"physicaliqa-train-dev/dev-labels.lst",
         "test":"physicaliqa-test/physicaliqa.jsonl"}
 
     @staticmethod
@@ -50,10 +50,8 @@ class PhysicaliqaDataset(Dataset):
         for i, line in enumerate(raw_examples):
             qid = "{} {}".format(self.data_type, i)
             goal = line["goal"]
-            solutions = np.array([line["answer{}".format(self.LABELS[e])] for e in range(len(self.LABELS))])
-
+            solutions = np.array([line["sol{}".format(e+1)] for e in range(len(self.LABELS))])
             label = raw_labels[i] if self.data_type != "test" else "0"
-
             example = {
                 "qid": qid,
                 "goal": goal,
@@ -98,7 +96,7 @@ class PhysicaliqaDataset(Dataset):
                 choice_tokens.append(solution_token)
                 choice_segment_ids.append(1)
             choice_tokens.append(self.sep_token)
-            choice_segment_dis.append(1)
+            choice_segment_ids.append(1)
 
             choice_token_ids = self.tokenizer.convert_tokens_to_ids(choice_tokens)
 
