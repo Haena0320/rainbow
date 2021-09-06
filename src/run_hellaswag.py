@@ -1,5 +1,5 @@
 import os, sys
-sys.path.append("/data/user15/workspace/rainbow")
+sys.path.append("/home/user15/workspace/rainbow")
 import argparse
 import glob
 import logging
@@ -73,7 +73,7 @@ class HellaswagDataset(Dataset):
                 "label": self.LABELS.index(label)
             }
             self.example_list.append(example)
-
+            assert example["label"] in self.get_labels()
         self.cls_token, self.sep_token, self.pad_token = \
             self.tokenizer.cls_token, self.tokenizer.sep_token, self.tokenizer.pad_token
         self.cls_id, self.sep_id, self.pad_id = self.tokenizer.convert_tokens_to_ids(
@@ -106,12 +106,20 @@ class HellaswagDataset(Dataset):
             choice_tokens.append(self.sep_token)
             choice_segment_ids.append(0)
 
-            for e_token in ending_token:
-                choice_tokens.append(e_token)
+            if self.model_class == "bert":
+                for e_token in ending_token:
+                    choice_tokens.append(e_token)
+                    choice_segment_ids.append(1)
                 choice_segment_ids.append(1)
-            choice_tokens.append(self.sep_token)
-            choice_segment_ids.append(1)
+            else:
+                choice_tokens.append(self.sep_token)
+                choice_segment_ids.append(0)
+                for e_token in ending_token:
+                    choice_tokens.append(e_token)
+                    choice_segment_ids.append(0)
+                choice_segment_ids.append(0)
 
+            choice_tokens.append(self.sep_token)
             choice_token_ids = self.tokenizer.convert_tokens_to_ids(choice_tokens)
 
             tokens.append(choice_tokens)
@@ -335,8 +343,8 @@ def main():
     model.to(args.device)
     logger.info("Training/evaluation parameters %s", args)
 
-    train_dataset = HellaswagDataset("train", args.data_dir, tokenizer, args.do_lower_case, args.max_seq_length)
-    dev_dataset = HellaswagDataset("dev", args.data_dir, tokenizer, args.do_lower_case, args.max_seq_length)
+    train_dataset = HellaswagDataset(args.model_class, "train", args.data_dir, tokenizer, args.do_lower_case, args.max_seq_length)
+    dev_dataset = HellaswagDataset(args.model_class, "dev", args.data_dir, tokenizer, args.do_lower_case, args.max_seq_length)
     # test_dataset = HellaswagDataset("test", args.data_dir, tokenizer, args.do_lower_case, args.max_seq_length)
 
     if args.do_train:

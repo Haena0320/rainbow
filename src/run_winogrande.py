@@ -1,5 +1,5 @@
 import os, sys
-sys.path.append("/data/user15/workspace/rainbow")
+sys.path.append("/home/user15/workspace/rainbow")
 import argparse
 import glob
 import logging
@@ -55,7 +55,7 @@ class WinograndeDataset(Dataset):
                 "label":self.LABELS.index(label)
             }
             self.example_list.append(example)
-
+            assert example["label"] in self.get_labels()
         self.cls_token, self.sep_token, self.pad_token = \
             self.tokenizer.cls_token, self.tokenizer.sep_token, self.tokenizer.pad_token
         self.cls_id, self.sep_id, self.pad_id = self.tokenizer.convert_tokens_to_ids(
@@ -88,13 +88,19 @@ class WinograndeDataset(Dataset):
             choice_tokens.append(self.sep_token)
             choice_segment_ids.append(0)
 
-            for option_token in option:
-                choice_tokens.append(option_token)
+            if self.model_class == "bert":
+                for option_token in option:
+                    choice_tokens.append(option_token)
+                    choice_segment_ids.append(1)
                 choice_segment_ids.append(1)
-
+            else:
+                choice_tokens.append(self.sep_token)
+                choice_segment_ids.append(0)
+                for option_token in option:
+                    choice_tokens.append(option_token)
+                    choice_segment_ids.append(0)
+                choice_segment_ids.append(0)
             choice_tokens.append(self.sep_token)
-            choice_segment_ids.append(1)
-
             choice_token_ids = self.tokenizer.convert_tokens_to_ids(choice_tokens)
             tokens.append(choice_tokens)
             token_ids.append(choice_token_ids)

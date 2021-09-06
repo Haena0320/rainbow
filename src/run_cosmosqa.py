@@ -31,7 +31,8 @@ class CosmosqaDataset(Dataset):
     def get_labels():
         return [0,1,2,3]
 
-    def __init__(self, data_type, data_dir, tokenizer, do_lower_case, max_seq_length, **kwargs):
+    def __init__(self,model_class, data_type, data_dir, tokenizer, do_lower_case, max_seq_length, **kwargs):
+        self.model_class = model_class
         self.data_type = data_type
         self.data_dir = data_dir  # datasets/CosmosQA
         self.tokenizer = tokenizer
@@ -90,12 +91,21 @@ class CosmosqaDataset(Dataset):
             choice_tokens.append(self.sep_token)
             choice_segment_ids.append(0)
 
-            for answer_token in answer_tokens:
-                choice_tokens.append(answer_token)
+            if self.model_class =="bert":
+                for answer_token in answer_tokens:
+                    choice_tokens.append(answer_token)
+                    choice_segment_ids.append(1)
                 choice_segment_ids.append(1)
-            choice_tokens.append(self.sep_token)
-            choice_segment_ids.append(1)
 
+            else:
+                choice_tokens.append(self.sep_token)
+                choice_segment_ids.append(0)
+                for answer_token in answer_tokens:
+                    choice_tokens.append(answer_token)
+                    choice_segment_ids.append(0)
+                choice_segment_ids.append(0)
+
+            choice_tokens.append(self.sep_token)
             choice_token_ids = self.tokenizer.convert_tokens_to_ids(choice_tokens)
 
             tokens.append(choice_tokens)
@@ -319,8 +329,8 @@ def main():
     model.to(args.device)
     logger.info("Training/evaluation parameters %s", args)
 
-    train_dataset = CosmosqaDataset("train", args.data_dir, tokenizer, args.do_lower_case, args.max_seq_length)
-    dev_dataset = CosmosqaDataset("dev", args.data_dir, tokenizer, args.do_lower_case, args.max_seq_length)
+    train_dataset = CosmosqaDataset(args.model_class, "train", args.data_dir, tokenizer, args.do_lower_case, args.max_seq_length)
+    dev_dataset = CosmosqaDataset(args.model_class, "dev", args.data_dir, tokenizer, args.do_lower_case, args.max_seq_length)
     # test_dataset = CosmosqaDataset("test", args.data_dir, tokenizer, args.do_lower_case, args.max_seq_length)
 
     if args.do_train:

@@ -1,5 +1,5 @@
 import os, sys
-sys.path.append("/data/user15/workspace/rainbow")
+sys.path.append("/home/user15/workspace/rainbow")
 import argparse
 import glob
 import logging
@@ -34,7 +34,8 @@ class SocialiqaDataset(Dataset):
     def get_labels():
         return [0,1,2]
 
-    def __init__(self, data_type, data_dir, tokenizer, do_lower_case, max_seq_length, **kwargs):
+    def __init__(self, model_class, data_type, data_dir, tokenizer, do_lower_case, max_seq_length, **kwargs):
+        self.model_class = model_class
         self.data_type = data_type
         self.data_dir = data_dir  # datasets/CosmosQA
         self.tokenizer = tokenizer
@@ -63,7 +64,7 @@ class SocialiqaDataset(Dataset):
                 "label": self.LABELS.index(label)
             }
             self.example_list.append(example)
-
+            assert example["label"] in self.get_labels()
         self.cls_token, self.sep_token, self.pad_token = \
             self.tokenizer.cls_token, self.tokenizer.sep_token, self.tokenizer.pad_token
         self.cls_id, self.sep_id, self.pad_id = self.tokenizer.convert_tokens_to_ids(
@@ -95,12 +96,20 @@ class SocialiqaDataset(Dataset):
                 choice_segment_ids.append(0)
             choice_tokens.append(self.sep_token)
             choice_segment_ids.append(0)
-
-            for answer_token in answer_tokens:
-                choice_tokens.append(answer_token)
+            if self.model_class =="bert":
+                for answer_token in answer_tokens:
+                    choice_tokens.append(answer_token)
+                    choice_segment_ids.append(1)
                 choice_segment_ids.append(1)
+            else:
+                choice_tokens.append(self.sep_token)
+                choice_segment_ids.append(0)
+                for answer_token in answer_tokens:
+                    choice_tokens.append(answer_token)
+                    choice_segment_ids.append(0)
+                choice_segment_ids.append(0)
+
             choice_tokens.append(self.sep_token)
-            choice_segment_ids.append(1)
 
             choice_token_ids = self.tokenizer.convert_tokens_to_ids(choice_tokens)
 
@@ -325,8 +334,8 @@ def main():
     model.to(args.device)
     logger.info("Training/evaluation parameters %s", args)
 
-    train_dataset = SocialiqaDataset("train", args.data_dir, tokenizer, args.do_lower_case, args.max_seq_length)
-    dev_dataset = SocialiqaDataset("dev", args.data_dir, tokenizer, args.do_lower_case, args.max_seq_length)
+    train_dataset = SocialiqaDataset(args.model_class, "train", args.data_dir, tokenizer, args.do_lower_case, args.max_seq_length)
+    dev_dataset = SocialiqaDataset(args.model_class, "dev", args.data_dir, tokenizer, args.do_lower_case, args.max_seq_length)
     # test_dataset = SocialiqaDataset("test", args.data_dir, tokenizer, args.do_lower_case, args.max_seq_length)
 
     if args.do_train:
