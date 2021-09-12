@@ -1,5 +1,5 @@
 import os, sys
-sys.path.append("/home/user15/workspace/rainbow")
+sys.path.append(os.path.join(os.environ['HOME'], "workspace/rainbow"))
 import argparse
 import glob
 import logging
@@ -30,7 +30,8 @@ class WinograndeDataset(Dataset):
     def get_labels():
         return [0,1]
 
-    def __init__(self, data_type, data_dir, tokenizer, do_lower_case, max_seq_length, **kwargs):
+    def __init__(self, model_class, data_type, data_dir, tokenizer, do_lower_case, max_seq_length, **kwargs):
+        self.model_class = model_class
         self.data_type = data_type
         self.data_dir = data_dir # datasets/aNLI
         self.tokenizer = tokenizer
@@ -296,7 +297,7 @@ def train(args, train_dataset, model, tokenizer, eval_dataset=None):
             train_iterator.close()
             break
 
-    with open(os.path.join(args.output_dir, "best_eval_results.txt"), "w") as fp:
+    with open(os.path.join(args.output_dir, "best_eval_results.txt"), "a") as fp:
         fp.write("{}{}".format(best_accu, os.linesep))
 
 def check_pred(predictions ,dev_dataset, fp):
@@ -353,8 +354,8 @@ def main():
     model.to(args.device)
     logger.info("Training/evaluation parameters %s", args)
 
-    train_dataset = WinograndeDataset("train", args.data_dir, tokenizer, args.do_lower_case, args.max_seq_length)
-    dev_dataset = WinograndeDataset("dev", args.data_dir, tokenizer, args.do_lower_case, args.max_seq_length)
+    train_dataset = WinograndeDataset(args.model_class,"train", args.data_dir, tokenizer, args.do_lower_case, args.max_seq_length)
+    dev_dataset = WinograndeDataset(args.model_class, "dev", args.data_dir, tokenizer, args.do_lower_case, args.max_seq_length)
     #test_dataset = WinograndeDataset("test", args.data_dir, tokenizer, args.do_lower_case, args.max_seq_length)
 
     if args.do_train:

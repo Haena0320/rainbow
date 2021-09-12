@@ -1,5 +1,5 @@
 import os, sys
-sys.path.append("/data/user15/workspace/rainbow")
+sys.path.append(os.path.join(os.environ['HOME'], "workspace/rainbow"))
 import argparse
 import glob
 import logging
@@ -302,7 +302,7 @@ def train(args, train_dataset, model, tokenizer, eval_dataset=None):
             train_iterator.close()
             break
 
-    with open(os.path.join(args.output_dir, "best_eval_results.txt"), "w") as fp:
+    with open(os.path.join(args.output_dir, "best_eval_results.txt"), "a") as fp:
         fp.write("{}{}".format(best_accu, os.linesep))
 
 def check_pred(predictions ,dev_dataset, fp):

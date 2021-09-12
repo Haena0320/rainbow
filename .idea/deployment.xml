@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="PublishConfigData" autoUpload="Always" serverName="user15@163.152.23.129:22" remoteFilesAllowedToDisappearOnAutoupload="false" autoUploadExternalChanges="true">
+  <component name="PublishConfigData" autoUpload="Always" serverName="user15@163.152.23.109:22" remoteFilesAllowedToDisappearOnAutoupload="false" autoUploadExternalChanges="true">
     <serverData>
-      <paths name="user15@163.152.23.129:22">
+      <paths name="user15@163.152.23.109:22">
         <serverdata>
           <mappings>
-            <mapping deploy="/home/user15/workspace/rainbow" local="$PROJECT_DIR$" />
+            <mapping deploy="/user15/workspace/rainbow" local="$PROJECT_DIR$" />
           </mappings>
         </serverdata>
       </paths>

@@ -1,5 +1,5 @@
 import os, sys
-sys.path.append("/home/user15/workspace/rainbow")
+sys.path.append(os.path.join(os.environ['HOME'], "workspace/rainbow"))
 import argparse
 import glob
 import logging
@@ -45,7 +45,8 @@ class HellaswagDataset(Dataset):
     def get_labels():
         return [0,1,2,3]
 
-    def __init__(self, data_type, data_dir, tokenizer, do_lower_case, max_seq_length, **kwargs):
+    def __init__(self, model_class, data_type, data_dir, tokenizer, do_lower_case, max_seq_length, **kwargs):
+        self.model_class = model_class
         self.data_type = data_type
         self.data_dir = data_dir  # datasets/HellaSWAG
         self.tokenizer = tokenizer
@@ -316,7 +317,7 @@ def train(args, train_dataset, model, tokenizer, eval_dataset=None):
             train_iterator.close()
             break
 
-    with open(os.path.join(args.output_dir, "best_eval_results.txt"), "w") as fp:
+    with open(os.path.join(args.output_dir, "best_eval_results.txt"), "a") as fp:
         fp.write("{}{}".format(best_accu, os.linesep))
 
 def check_pred(predictions ,dev_dataset, fp):
