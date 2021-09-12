@@ -84,7 +84,10 @@ class AnliDataset(Dataset):
         segment_ids = []
         for choice_idx, hyp_token in enumerate(hyp_tokens):
             hyp = hyp_token + obs2
-            _truncate_seq_pair(obs1, hyp, self.max_seq_length - 3)
+            if self.model_class =="bert":
+                _truncate_seq_pair(obs1, hyp, self.max_seq_length - 3)
+            else:
+                _truncate_seq_pair(obs1, hyp, self.max_seq_length-4)
 
             choice_tokens = []  # token id
             choice_segment_ids = []  # segment id
@@ -222,6 +225,18 @@ def evaluate(args, eval_dataset, model, tokenizer, global_step,
               }
 
     qid_list = eval_dataset.get_all_qid()
+
+    if is_saving_pred:
+        outputs = np.concatenate(preds_list)
+        assert len(qid_list) == outputs.size
+        with open(os.path.join(args.output_dir, file_prefix + "saved_predictions.csv"),
+                  "w", encoding="utf-8") as wfp:
+            for _pred, _qid in zip(outputs, qid_list):
+                wfp.write("{},{}{}".format(
+                    _qid, chr(int(_pred) + ord("A")),
+                    os.linesep
+                ))
+
     output_eval_file = os.path.join(args.output_dir, file_prefix + "eval_results.txt")
     with open(output_eval_file, "a") as writer:
         logging.info("***** Eval results at {}*****".format(global_step))
@@ -297,6 +312,22 @@ def train(args, train_dataset, model, tokenizer, eval_dataset=None):
     with open(os.path.join(args.output_dir, "best_eval_results.txt"), "w") as fp:
         fp.write("{}{}".format(best_accu, os.linesep))
 
+def check_pred(predictions ,dev_dataset, fp):
+    import pandas as pd
+    data = []
+    ls = dev_dataset.example_list
+    for line_ in tqdm(predictions, ncols=100, desc="check questions where model failed to answer"):
+        l= line_.split(',')
+        qid_ =l[0]
+        id_ = int(l[1])
+        for i in range(len(ls)):
+            if ls[i]["qid"] == qid_:
+                s = ls[i]
+                if id_ != s["label"]:
+                    data.append({"qid":qid_, "obs1":s["obs1"], "obs2":s["obs2"],"hyp1":s["hyp1"], "hyp2":s["hyp2"] ,"label":s["label"], "id":id_})
+    torch.save(data, fp)
+    logging.info("prediction with samples are saved")
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -310,6 +341,8 @@ def main():
                         help="Path to pre-trained model")
     parser.add_argument("--output_dir", default=None, type=str, required=True,
                         help="The output directory where the model checkpoints will be written.")
+    parser.add_argument("--check_predict", default=True, type=bool, required=True,
+                        help="check predicted result")
 
     define_hparams_training(parser)
     args = parser.parse_args()
@@ -366,6 +399,13 @@ def main():
             fp.write("******* results *********{}".format(os.linesep))
             fp.write("{}{}".format(dev_accu, os.linesep))
 
+    if args.check_predict:
+        with open(os.path.join(args.output_dir, "dev_saved_predictions.csv"), "r") as fp:
+            predictions = fp.readlines()
+
+        #with open(os.path.join(args.output_dir, "dev_example_predictions.csv"), "w") as fp:
+        fp = os.path.join(args.output_dir, 'dev_example_predictions.csv')
+        check_pred(predictions, dev_dataset, fp)
 
 if __name__ == '__main__':
     main()

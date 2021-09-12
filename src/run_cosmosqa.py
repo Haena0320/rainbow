@@ -78,8 +78,10 @@ class CosmosqaDataset(Dataset):
         token_ids = []
         segment_ids = []
         for choice_idx, answer_tokens in enumerate(answers_tokens):
-            _truncate_seq_pair(context_tokens, answer_tokens, self.max_seq_length - 3)
-
+            if self.model_class == "bert":
+                _truncate_seq_pair(context_tokens, answer_tokens, self.max_seq_length - 3)
+            else:
+                _truncate_seq_pair(context_tokens, answer_tokens, self.max_seq_length - 4)
             choice_tokens = []  # token id
             choice_segment_ids = []  # segment id
             choice_tokens.append(self.cls_token)
@@ -216,6 +218,18 @@ def evaluate(args, eval_dataset, model, tokenizer, global_step,
               }
 
     qid_list = eval_dataset.get_all_qid()
+
+    if is_saving_pred:
+        outputs = np.concatenate(preds_list)
+        assert len(qid_list) == outputs.size
+        with open(os.path.join(args.output_dir, file_prefix + "saved_predictions.csv"),
+                  "w", encoding="utf-8") as wfp:
+            for _pred, _qid in zip(outputs, qid_list):
+                wfp.write("{},{}{}".format(
+                    _qid, chr(int(_pred) + ord("A")),
+                    os.linesep
+                ))
+
     output_eval_file = os.path.join(args.output_dir, file_prefix + "eval_results.txt")
     with open(output_eval_file, "a") as writer:
         logging.info("***** Eval results at {}*****".format(global_step))
@@ -291,6 +305,21 @@ def train(args, train_dataset, model, tokenizer, eval_dataset=None):
     with open(os.path.join(args.output_dir, "best_eval_results.txt"), "w") as fp:
         fp.write("{}{}".format(best_accu, os.linesep))
 
+def check_pred(predictions ,dev_dataset, fp):
+    import pandas as pd
+    data = []
+    ls = dev_dataset.example_list
+    for line_ in tqdm(predictions, ncols=100, desc="check questions where model failed to answer"):
+        l= line_.split(',')
+        qid_ =l[0]
+        id_ = int(l[1])
+        for i in range(len(ls)):
+            if ls[i]["qid"] == qid_:
+                s = ls[i]
+                if id_ != s["label"]:
+                    data.append({"qid":qid_, "context":s["context"], "question":s["question"],"answers":s["answers"], "label":s["label"], "id":id_})
+    torch.save(data, fp)
+    logging.info("prediction with samples are saved")
 
 def main():
     parser = argparse.ArgumentParser()
@@ -360,6 +389,13 @@ def main():
             fp.write("******* results *********{}".format(os.linesep))
             fp.write("{}{}".format(dev_accu, os.linesep))
 
+    if args.check_predict:
+        with open(os.path.join(args.output_dir, "dev_saved_predictions.csv"), "r") as fp:
+            predictions = fp.readlines()
+
+        #with open(os.path.join(args.output_dir, "dev_example_predictions.csv"), "w") as fp:
+        fp = os.path.join(args.output_dir, 'dev_example_predictions.csv')
+        check_pred(predictions, dev_dataset, fp)
 
 if __name__ == '__main__':
     main()
